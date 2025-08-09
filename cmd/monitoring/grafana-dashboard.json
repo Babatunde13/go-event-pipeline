@@ -1,0 +1,65 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "event-pipeline-dashboard",
+    "title": "Event Pipeline Monitoring",
+    "timezone": "browser",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "Event Processing Duration (seconds) for Kafka",
+        "targets": [
+          {
+            "expr": "event_processing_duration_seconds_kafka",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "id": 1,
+        "datasource": "Prometheus"
+      },
+      {
+        "type": "graph",
+        "title": "Total Events Processed for Kafka",
+        "targets": [
+          {
+            "expr": "events_processed_total_kafka",
+            "legendFormat": "{{instance}}",
+            "refId": "B"
+          }
+        ],
+        "id": 2,
+        "datasource": "Prometheus"
+      },
+      {
+        "type": "graph",
+        "title": "Event Processing Duration (seconds) for Event Bridge",
+        "targets": [
+          {
+            "expr": "event_processing_duration_seconds_eventbridge",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "id": 3,
+        "datasource": "Prometheus"
+      },
+      {
+        "type": "graph",
+        "title": "Total Events Processed  for Event Bridge",
+        "targets": [
+          {
+            "expr": "events_processed_total_eventbridge",
+            "legendFormat": "{{instance}}",
+            "refId": "B"
+          }
+        ],
+        "id": 4,
+        "datasource": "Prometheus"
+      }
+    ],
+    "schemaVersion": 26,
+    "version": 1
+  },
+  "overwrite": true
+}

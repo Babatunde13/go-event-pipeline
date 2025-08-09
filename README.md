@@ -16,38 +16,34 @@ To design, implement, and evaluate two parallel event-driven pipelines — one p
 ---
 
 ## 📦 Project Structure
-
+```tree
 go-event-pipeline/
-├── cmd/ # Entry points for all services
-│ ├── kafka-producer/
-│ ├── kafka-consumer/
-│ ├── eventbridge-producer/
-│ ├── lambda-consumer/
-│ ├── load-generator/
-│ └── monitoring/
-│
-├── internal/ # Shared Go packages
-│ ├── event/ # Event models and schema
-│ ├── kafka/ # Kafka utilities
-│ ├── eventbridge/ # EventBridge utilities
-│ ├── redis/ # Redis utilities
-│ ├── telemetry/ # Prometheus, logging, etc.
-│ └── config/ # Configuration loader
-│
-├── terraform/ # Infrastructure-as-Code
-│ ├── kafka/
-│ ├── eventbridge/
-│ ├── redis/
-│ └── monitoring/
-│
-├── deployments/ # Dockerfiles, GitHub Actions, etc.
-├── go.mod
-└── README.md
-
-yaml
-Copy
-Edit
-
+    ├── cmd/ # Entry points for all services
+    │ ├── kafka-producer/
+    │ ├── kafka-consumer/
+    │ ├── eventbridge-producer/
+    │ ├── lambda-consumer/
+    │ ├── load-generator/
+    │ └── monitoring/
+    │
+    ├── internal/ # Shared Go packages
+    │ ├── event/ # Event models and schema
+    │ ├── kafka/ # Kafka utilities
+    │ ├── eventbridge/ # EventBridge utilities
+    │ ├── redis/ # Redis utilities
+    │ ├── telemetry/ # Prometheus, logging, etc.
+    │ └── config/ # Configuration loader
+    │
+    ├── terraform/ # Infrastructure-as-Code
+    │ ├── kafka/
+    │ ├── eventbridge/
+    │ ├── redis/
+    │ └── monitoring/
+    │
+    ├── deployments/ # Dockerfiles, GitHub Actions, etc.
+    ├── go.mod
+    └── README.md
+```
 ---
 
 ## 🚀 Pipelines Overview

@@ -35,8 +35,10 @@ func (r *router) sendEvent(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	data, _ := e.ToJSON()
+
 	start := time.Now()
+	e.Timestamp = start.UTC() // Ensure timestamp is set to current time
+	data, _ := e.ToJSON()
 	err := r.producer.SendMessage(context.Background(), e.EventID, data)
 	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, true, err == nil)
 	if err != nil {

@@ -17,14 +17,41 @@ import (
 
 var ginLambda *ginadapter.GinLambda
 
+type router struct {
+	producer *kafka.Producer
+}
+
 func init() {
 	config.Load("event-pipeline-secret")
 }
 
-func router() {
+func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	return ginLambda.ProxyWithContext(ctx, req)
+}
+
+func (r *router) sendEvent(c *gin.Context) {
+	var e event.Event
+	if err := c.ShouldBindJSON(&e); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	data, _ := e.ToJSON()
+	start := time.Now()
+	err := r.producer.SendMessage(context.Background(), e.EventID, data)
+	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, true, err == nil)
+	if err != nil {
+		log.Printf("failed to send event: %v", err)
+		c.JSON(500, gin.H{"error": err.Error()})
+	} else {
+		log.Printf("event sent: %s - %s", e.EventType, e.EventID)
+		c.JSON(200, gin.H{"status": "ok"})
+	}
+}
+
+func main() {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(gin.Recovery())
-	gin.SetMode(gin.ReleaseMode)
 	producer := kafka.NewProducer(config.Cfg.KafkaBroker, config.Cfg.KafkaTopic)
 	defer producer.Close()
 
@@ -32,34 +59,10 @@ func router() {
 	if err != nil {
 		log.Println("topic creation error (might already exist):", err)
 	}
-	r.POST("/event", func(c *gin.Context) {
-		var e event.Event
-		if err := c.ShouldBindJSON(&e); err != nil {
-			c.JSON(400, gin.H{"error": err.Error()})
-			return
-		}
-		data, _ := e.ToJSON()
-		start := time.Now()
-		err := producer.SendMessage(context.Background(), e.EventID, data)
-		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, true, err == nil)
-		if err != nil {
-			log.Printf("failed to send event: %v", err)
-			c.JSON(500, gin.H{"error": err.Error()})
-		} else {
-			log.Printf("event sent: %s - %s", e.EventType, e.EventID)
-			c.JSON(200, gin.H{"status": "ok"})
-		}
-	})
+	api := &router{producer: producer}
+	r.POST("/event", api.sendEvent)
 
 	ginLambda = ginadapter.New(r)
 	log.Println("Starting lambda server....")
-}
-
-func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	return ginLambda.ProxyWithContext(ctx, req)
-}
-
-func main() {
-	router()
 	lambda.Start(handler)
 }

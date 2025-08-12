@@ -17,44 +17,47 @@ import (
 
 var ginLambda *ginadapter.GinLambda
 
-func init() {
-	config.Load("event-pipeline-secret")
+type router struct {
+	eb *eventbridge.Client
 }
 
-func router() {
-	eb := eventbridge.New(*config.Cfg.AwsConfig, config.Cfg.EventBusName)
-	r := gin.Default()
-	r.Use(gin.Recovery())
-	gin.SetMode(gin.ReleaseMode)
-	r.POST("/event", func(c *gin.Context) {
-		var e event.Event
-		if err := c.ShouldBindJSON(&e); err != nil {
-			c.JSON(400, gin.H{"error": err.Error()})
-			return
-		}
-
-		start := time.Now()
-		err := eb.PutEvent(context.Background(), config.Cfg.EventBusSource, string(e.EventType), e)
-		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, true, err == nil)
-
-		if err != nil {
-			log.Printf("failed to send event: %v", err)
-			c.JSON(500, gin.H{"error": err.Error()})
-		} else {
-			log.Printf("event sent: %s - %s", e.EventType, e.EventID)
-			c.JSON(200, gin.H{"status": "ok"})
-		}
-	})
-
-	ginLambda = ginadapter.New(r)
-	log.Println("Starting lambda server....")
+func init() {
+	config.Load("event-pipeline-secret")
 }
 
 func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return ginLambda.ProxyWithContext(ctx, req)
 }
 
+func (r *router) sendEvent(c *gin.Context) {
+	var e event.Event
+	if err := c.ShouldBindJSON(&e); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	start := time.Now()
+	err := r.eb.PutEvent(context.Background(), config.Cfg.EventBusSource, string(e.EventType), e)
+	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, true, err == nil)
+
+	if err != nil {
+		log.Printf("failed to send event: %v", err)
+		c.JSON(500, gin.H{"error": err.Error()})
+	} else {
+		log.Printf("event sent: %s - %s", e.EventType, e.EventID)
+		c.JSON(200, gin.H{"status": "ok"})
+	}
+}
+
 func main() {
-	router()
+	eb := eventbridge.New(*config.Cfg.AwsConfig, config.Cfg.EventBusName)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.Default()
+	r.Use(gin.Recovery())
+	api := &router{eb: eb}
+	r.POST("/event", api.sendEvent)
+
+	ginLambda = ginadapter.New(r)
+	log.Println("Starting lambda server....")
 	lambda.Start(handler)
 }

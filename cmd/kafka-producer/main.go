@@ -55,6 +55,7 @@ func main() {
 	r := gin.Default()
 	r.Use(gin.Recovery())
 	producer := kafka.NewProducer(config.Cfg.KafkaBroker, config.Cfg.KafkaTopic)
+	log.Println("Kafka producer initialized with broker:", config.Cfg.KafkaBroker)
 	defer producer.Close()
 
 	err := producer.CreateTopic(context.Background(), config.Cfg.KafkaTopic, 1, 1)

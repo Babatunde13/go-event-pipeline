@@ -26,6 +26,34 @@ func NewProducer(broker string, topic string) *Producer {
 	return &Producer{writer: writer}
 }
 
+func (p *Producer) CreateTopic(ctx context.Context, topic string, numPartitions int, replicationFactor int) error {
+	conn, err := kafka.DialContext(ctx, "tcp", p.writer.Addr.String())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	controller, err := conn.Controller()
+	if err != nil {
+		return err
+	}
+
+	var controllerConn *kafka.Conn
+	controllerConn, err = kafka.DialContext(ctx, "tcp", controller.Host+":"+string(rune(controller.Port)))
+	if err != nil {
+		return err
+	}
+	defer controllerConn.Close()
+
+	topicConfig := kafka.TopicConfig{
+		Topic:             topic,
+		NumPartitions:     numPartitions,
+		ReplicationFactor: replicationFactor,
+	}
+
+	return controllerConn.CreateTopics(topicConfig)
+}
+
 func (p *Producer) SendMessage(ctx context.Context, key string, value []byte) error {
 	msg := kafka.Message{
 		Key:   []byte(key),

@@ -26,6 +26,10 @@ func router() {
 	producer := kafka.NewProducer(config.Cfg.KafkaBroker, config.Cfg.KafkaTopic)
 	defer producer.Close()
 
+	err := producer.CreateTopic(context.Background(), config.Cfg.KafkaTopic, 1, 1)
+	if err != nil {
+		log.Println("topic creation error (might already exist):", err)
+	}
 	r.POST("/event", func(c *gin.Context) {
 		var e event.Event
 		if err := c.ShouldBindJSON(&e); err != nil {

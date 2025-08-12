@@ -36,6 +36,7 @@ func (r *router) sendEvent(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Received event: %s - %s", e.EventType, e.EventID)
 	start := time.Now()
 	e.Timestamp = start.UTC() // Ensure timestamp is set to current time
 	err := r.eb.PutEvent(context.Background(), config.Cfg.EventBusSource, string(e.EventType), e)
@@ -51,10 +52,11 @@ func (r *router) sendEvent(c *gin.Context) {
 }
 
 func main() {
-	eb := eventbridge.New(*config.Cfg.AwsConfig, config.Cfg.EventBusName)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(gin.Recovery())
+	eb := eventbridge.New(*config.Cfg.AwsConfig, config.Cfg.EventBusName)
+	log.Println("EventBridge client initialized with bus name:", config.Cfg.EventBusName)
 	api := &router{eb: eb}
 	r.POST("/event/eventbridge", api.sendEvent)
 	r.NoRoute(func(c *gin.Context) {

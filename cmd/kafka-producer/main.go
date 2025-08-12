@@ -36,6 +36,7 @@ func (r *router) sendEvent(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Received event: %s - %s", e.EventType, e.EventID)
 	start := time.Now()
 	e.Timestamp = start.UTC() // Ensure timestamp is set to current time
 	data, _ := e.ToJSON()

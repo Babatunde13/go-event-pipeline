@@ -15,9 +15,9 @@ type Consumer struct {
 	reader *kafka.Reader
 }
 
-func NewProducer(broker string, topic string) *Producer {
+func NewProducer(brokers []string, topic string) *Producer {
 	writer := &kafka.Writer{
-		Addr:         kafka.TCP(broker),
+		Addr:         kafka.TCP(brokers...),
 		Topic:        topic,
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireAll,
@@ -66,9 +66,9 @@ func (p *Producer) Close() error {
 	return p.writer.Close()
 }
 
-func NewConsumer(broker string, topic string, groupID string) *Consumer {
+func NewConsumer(brokers []string, topic string, groupID string) *Consumer {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:        []string{broker},
+		Brokers:        brokers,
 		Topic:          topic,
 		GroupID:        groupID,
 		MinBytes:       10e3, // 10KB

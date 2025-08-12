@@ -3,20 +3,23 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"strings"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	secretsmanager "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"log"
 )
 
 type Config struct {
-	KafkaBroker              string `json:"KAFKA_BROKER"`
+	Brokers                  string `json:"KAFKA_BROKERS"`
 	KafkaTopic               string `json:"KAFKA_TOPIC"`
 	EventBusName             string `json:"EVENT_BUS_NAME"`
 	EventBusSource           string `json:"EVENT_BUS_SOURCE"`
 	RedisAddress             string `json:"REDIS_ADDRESS"`
 	PrometheusPushGatewayUrl string `json:"PROMETHEUS_PUSH_GATEWAY_URL"`
 	AwsConfig                *aws.Config
+	KafkaBrokers             []string
 }
 
 var Cfg Config
@@ -43,4 +46,8 @@ func Load(secretName string) {
 	}
 
 	Cfg.AwsConfig = &awsCfg
+	Cfg.KafkaBrokers = []string{}
+	for _, broker := range strings.Split(Cfg.Brokers, ",") {
+		Cfg.KafkaBrokers = append(Cfg.KafkaBrokers, strings.TrimSpace(broker))
+	}
 }

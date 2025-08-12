@@ -55,7 +55,7 @@ func main() {
 	r := gin.Default()
 	r.Use(gin.Recovery())
 	api := &router{eb: eb}
-	r.POST("/event", api.sendEvent)
+	r.POST("/event/eventbridge", api.sendEvent)
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "not found"})
 	})

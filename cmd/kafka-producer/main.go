@@ -60,7 +60,7 @@ func main() {
 		log.Println("topic creation error (might already exist):", err)
 	}
 	api := &router{producer: producer}
-	r.POST("/event", api.sendEvent)
+	r.POST("/event/kafka", api.sendEvent)
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "not found"})
 	})

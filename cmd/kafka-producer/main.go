@@ -23,6 +23,8 @@ func init() {
 
 func router() {
 	r := gin.Default()
+	r.Use(gin.Recovery())
+	gin.SetMode(gin.ReleaseMode)
 	producer := kafka.NewProducer(config.Cfg.KafkaBroker, config.Cfg.KafkaTopic)
 	defer producer.Close()
 

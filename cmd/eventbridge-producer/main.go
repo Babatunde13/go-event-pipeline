@@ -24,6 +24,8 @@ func init() {
 func router() {
 	eb := eventbridge.New(*config.Cfg.AwsConfig, config.Cfg.EventBusName)
 	r := gin.Default()
+	r.Use(gin.Recovery())
+	gin.SetMode(gin.ReleaseMode)
 	r.POST("/event", func(c *gin.Context) {
 		var e event.Event
 		if err := c.ShouldBindJSON(&e); err != nil {

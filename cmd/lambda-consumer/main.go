@@ -18,10 +18,8 @@ import (
 var redisClient *redis.Client
 
 func init() {
-	config.Load("go-event-pipeline-secret")
+	config.Load("lambda-consumer-secret")
 	redisClient = redis.New(config.Cfg.RedisAddress)
-	telemetry.Init()
-	go telemetry.StartServer(config.Cfg.PrometheusPort)
 }
 
 func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
@@ -42,12 +40,11 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 
 		start := time.Now()
 		err = redisClient.Set(e.EventID, string(jsonStr), 5*time.Minute)
-		telemetry.EventBridgeProcessingDuration.Observe(time.Since(start).Seconds())
+		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, false, err == nil)
 
 		if err != nil {
 			log.Printf("failed to store event in redis: %v", err)
 		} else {
-			telemetry.EventBridgeEventsProcessed.Inc()
 		}
 	}
 	return nil

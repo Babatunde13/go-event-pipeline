@@ -14,13 +14,10 @@ import (
 )
 
 func main() {
-	config.Load("go-event-pipeline-secret")
+	config.Load("kafka-consumer-secret")
 	rds := redis.New(config.Cfg.RedisAddress)
 	consumer := kafka.NewConsumer(config.Cfg.KafkaBrokers, config.Cfg.KafkaTopic, "event-consumer-group")
 	defer consumer.Close()
-
-	telemetry.Init()
-	go telemetry.StartServer(config.Cfg.PrometheusPort)
 
 	ctx := context.Background()
 	log.Println("Kafka consumer started...")
@@ -41,12 +38,11 @@ func main() {
 		jsonStr, _ := json.Marshal(e)
 		start := time.Now()
 		err = rds.Set(e.EventID, string(jsonStr), 5*time.Minute)
-		telemetry.EventBridgeProcessingDuration.Observe(time.Since(start).Seconds())
+		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, false, err == nil)
 
 		if err != nil {
 			log.Printf("failed to store in redis: %v", err)
 		} else {
-			telemetry.EventBridgeEventsProcessed.Inc()
 			log.Printf("event processed: %s - %s", e.EventType, e.EventID)
 		}
 	}

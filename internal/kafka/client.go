@@ -2,16 +2,17 @@ package kafka
 
 import (
 	"context"
-	"github.com/segmentio/kafka-go"
 	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
 type Producer struct {
-	Writer *kafka.Writer
+	writer *kafka.Writer
 }
 
 type Consumer struct {
-	Reader *kafka.Reader
+	reader *kafka.Reader
 }
 
 func NewProducer(brokers []string, topic string) *Producer {
@@ -22,7 +23,7 @@ func NewProducer(brokers []string, topic string) *Producer {
 		RequiredAcks: kafka.RequireAll,
 		Async:        false,
 	}
-	return &Producer{Writer: writer}
+	return &Producer{writer: writer}
 }
 
 func (p *Producer) SendMessage(ctx context.Context, key string, value []byte) error {
@@ -30,11 +31,11 @@ func (p *Producer) SendMessage(ctx context.Context, key string, value []byte) er
 		Key:   []byte(key),
 		Value: value,
 	}
-	return p.Writer.WriteMessages(ctx, msg)
+	return p.writer.WriteMessages(ctx, msg)
 }
 
 func (p *Producer) Close() error {
-	return p.Writer.Close()
+	return p.writer.Close()
 }
 
 func NewConsumer(brokers []string, topic string, groupID string) *Consumer {
@@ -46,13 +47,13 @@ func NewConsumer(brokers []string, topic string, groupID string) *Consumer {
 		MaxBytes:       10e6, // 10MB
 		CommitInterval: time.Second,
 	})
-	return &Consumer{Reader: reader}
+	return &Consumer{reader: reader}
 }
 
 func (c *Consumer) ReadMessage(ctx context.Context) (kafka.Message, error) {
-	return c.Reader.ReadMessage(ctx)
+	return c.reader.ReadMessage(ctx)
 }
 
 func (c *Consumer) Close() error {
-	return c.Reader.Close()
+	return c.reader.Close()
 }

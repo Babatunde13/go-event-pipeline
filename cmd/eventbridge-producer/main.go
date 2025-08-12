@@ -18,9 +18,7 @@ import (
 var ginLambda *ginadapter.GinLambda
 
 func init() {
-	config.Load("go-event-pipeline-secret")
-	telemetry.Init()
-	go telemetry.StartServer(config.Cfg.PrometheusPort)
+	config.Load("eventbridge-producer-secret")
 }
 
 func router() {
@@ -35,13 +33,12 @@ func router() {
 
 		start := time.Now()
 		err := eb.PutEvent(context.Background(), "ecommerce.analytics", string(e.EventType), e)
-		telemetry.EventBridgeProcessingDuration.Observe(time.Since(start).Seconds())
+		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, true, err == nil)
 
 		if err != nil {
 			log.Printf("failed to send event: %v", err)
 			c.JSON(500, gin.H{"error": err.Error()})
 		} else {
-			telemetry.EventBridgeEventsProcessed.Inc()
 			log.Printf("event sent: %s - %s", e.EventType, e.EventID)
 			c.JSON(200, gin.H{"status": "ok"})
 		}

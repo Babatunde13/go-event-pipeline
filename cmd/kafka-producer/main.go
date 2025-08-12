@@ -18,16 +18,13 @@ import (
 var ginLambda *ginadapter.GinLambda
 
 func init() {
-	config.Load("go-event-pipeline-secret")
-	telemetry.Init()
+	config.Load("kafka-producer-secret")
 }
 
 func router() {
 	r := gin.Default()
 	producer := kafka.NewProducer(config.Cfg.KafkaBrokers, config.Cfg.KafkaTopic)
 	defer producer.Close()
-
-	go telemetry.StartServer(config.Cfg.PrometheusPort)
 
 	r.POST("/event", func(c *gin.Context) {
 		var e event.Event
@@ -38,12 +35,11 @@ func router() {
 		data, _ := e.ToJSON()
 		start := time.Now()
 		err := producer.SendMessage(context.Background(), e.EventID, data)
-		telemetry.KafkaProcessingDuration.Observe(time.Since(start).Seconds())
+		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, true, err == nil)
 		if err != nil {
 			log.Printf("failed to send event: %v", err)
 			c.JSON(500, gin.H{"error": err.Error()})
 		} else {
-			telemetry.KafkaEventsProcessed.Inc()
 			log.Printf("event sent: %s - %s", e.EventType, e.EventID)
 			c.JSON(200, gin.H{"status": "ok"})
 		}

@@ -10,14 +10,15 @@ import (
 )
 
 type Config struct {
-	KafkaBrokers      []string `json:"KAFKA_BROKERS"`
-	KafkaTopic        string   `json:"KAFKA_TOPIC"`
-	EventBusName      string   `json:"EVENT_BUS_NAME"`
-	RedisAddress      string   `json:"REDIS_ADDRESS"`
-	PrometheusPort    string   `json:"PROMETHEUS_PORT"`
-	Environment       string   `json:"ENVIRONMENT"`
-	KafkaProducerPort string   `json:"KAFKA_PRODUCER_PORD"`
-	AwsConfig         *aws.Config
+	KafkaBrokers             []string `json:"KAFKA_BROKERS"`
+	KafkaTopic               string   `json:"KAFKA_TOPIC"`
+	EventBusName             string   `json:"EVENT_BUS_NAME"`
+	RedisAddress             string   `json:"REDIS_ADDRESS"`
+	PrometheusPort           string   `json:"PROMETHEUS_PORT"`
+	Environment              string   `json:"ENVIRONMENT"`
+	KafkaProducerPort        string   `json:"KAFKA_PRODUCER_PORT"`
+	PrometheusPushGatewayUrl string   `json:"PROMETHEUS_PUSH_GATEWAY_URL"`
+	AwsConfig                *aws.Config
 }
 
 var Cfg Config

@@ -23,7 +23,7 @@ func init() {
 
 func router() {
 	r := gin.Default()
-	producer := kafka.NewProducer(config.Cfg.KafkaBrokers, config.Cfg.KafkaTopic)
+	producer := kafka.NewProducer(config.Cfg.KafkaBroker, config.Cfg.KafkaTopic)
 	defer producer.Close()
 
 	r.POST("/event", func(c *gin.Context) {

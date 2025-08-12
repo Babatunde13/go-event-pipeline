@@ -1,0 +1,78 @@
+name: Deploy Event Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-lambdas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Build and package all applications
+        run: make build && make package
+
+      - name: Deploy eventbridge-producer to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name eventbridge-producer \
+            --zip-file fileb://bin/eventbridge-producer/bootstrap.zip
+
+      - name: Deploy kafka-consumer to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name kafka-consumer \
+            --zip-file fileb://bin/kafka-consumer/bootstrap.zip
+
+      - name: Deploy kafka-producer to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name kafka-producer \
+            --zip-file fileb://bin/kafka-producer/bootstrap.zip
+
+      - name: Deploy lambda-consumer to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name lambda-consumer \
+            --zip-file fileb://bin/lambda-consumer/bootstrap.zip
+
+  deploy-monitoring:
+    runs-on: ubuntu-latest
+    needs: deploy-lambdas
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy monitoring stack to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "cmd/monitoring/"
+          target: "~/event-pipeline-monitoring"
+
+      - name: Deploy Docker Compose on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/event-pipeline-monitoring
+            docker compose pull
+            docker compose

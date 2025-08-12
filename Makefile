@@ -3,7 +3,7 @@ build-eventbridge-producer:
 # build-eventbridge-producer: build the event bridge producer application
 	@echo "Building event bridge producer..."
 	@export GO111MODULE=on
-	@env GOARCH=arm64 GOOS=linux go build -ldflags="-s -w" -o bin/eventbridge-producer/bootstrap cmd/eventbridge-producer/main.go
+	@env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/eventbridge-producer/bootstrap cmd/eventbridge-producer/main.go
 
 .PHONY: package-eventbridge-producer
 package-eventbridge-producer: build-eventbridge-producer
@@ -15,7 +15,7 @@ build-kafka-consumer:
 # build-kafka-consumer: build the kafka consumer application
 	@echo "Building kafka consumer..."
 	@export GO111MODULE=on
-	@env GOARCH=arm64 GOOS=linux go build -ldflags="-s -w" -o bin/kafka-consumer/bootstrap cmd/kafka-consumer/main.go
+	@env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/kafka-consumer/bootstrap cmd/kafka-consumer/main.go
 
 .PHONY: package-kafka-consumer
 package-kafka-consumer: build-kafka-consumer
@@ -28,7 +28,7 @@ build-kafka-producer:
 # build-kafka-producer: build the kafka producer application
 	@echo "Building kafka producer..."
 	@export GO111MODULE=on
-	@env GOARCH=arm64 GOOS=linux go build -ldflags="-s -w" -o bin/kafka-producer/bootstrap cmd/kafka-producer/main.go
+	@env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/kafka-producer/bootstrap cmd/kafka-producer/main.go
 
 .PHONY: package-kafka-producer
 package-kafka-producer: build-kafka-producer
@@ -40,7 +40,7 @@ build-lambda-consumer:
 # build-lambda-consumer: build the lambda consumer application
 	@echo "Building lambda consumer..."
 	@export GO111MODULE=on
-	@env GOARCH=arm64 GOOS=linux go build -ldflags="-s -w" -o bin/lambda-consumer/bootstrap cmd/lambda-consumer/main.go
+	@env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/lambda-consumer/bootstrap cmd/lambda-consumer/main.go
 
 .PHONY: package-lambda-consumer
 package-lambda-consumer: build-lambda-consumer
@@ -92,6 +92,8 @@ help:
 	@echo "  make package-kafka-producer           Package the Kafka producer application"
 	@echo "  make build-lambda-consumer            Build the Lambda consumer application"
 	@echo "  make package-lambda-consumer          Package the Lambda consumer application"
+	@echo "  make build-load-generator             Build the load generator application"
+	@echo "  make package-load-generator           Package the load generator application"
 	@echo "  make build                           Build all applications"
 	@echo "  make package                         Package all applications"
 	@echo "  make clean                           Clean up build artifacts"

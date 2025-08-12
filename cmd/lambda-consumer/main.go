@@ -17,6 +17,7 @@ import (
 )
 
 func init() {
+	log.Println("Initializing Lambda function handler...")
 }
 
 func handler(ctx context.Context, sqsEvent events.SQSEvent) error {

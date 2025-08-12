@@ -4,15 +4,25 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Babatunde13/event-pipeline/internal/event"
 )
+
+func getBaseURL() string {
+	baseUrl := os.Getenv("BASE_URL")
+	if baseUrl == "" {
+		log.Fatal("BASE_URL environment variable is not set")
+	}
+	return strings.TrimSuffix(baseUrl, "/") // Ensure no trailing slash
+}
 
 func sendEvent(wg *sync.WaitGroup, targetURL string, evt event.Event) {
 	defer wg.Done()
@@ -36,8 +46,8 @@ func main() {
 	flag.Parse()
 
 	targets := map[string]string{
-		"kafka":       "http://localhost:8081/event",
-		"eventbridge": "http://localhost:8082/event",
+		"kafka":       fmt.Sprintf("%s/kafka", getBaseURL()),
+		"eventbridge": fmt.Sprintf("%s/eventbridge", getBaseURL()),
 	}
 
 	selectedTargets := []string{}

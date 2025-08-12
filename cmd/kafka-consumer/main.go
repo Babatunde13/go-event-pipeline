@@ -16,7 +16,9 @@ import (
 
 func main() {
 	config.Load("event-pipeline-secret")
+	log.Println("Configuration loaded successfully")
 	rds := redis.New(config.Cfg.RedisAddress)
+	log.Printf("Redis client initialized with address: %s", config.Cfg.RedisAddress)
 	consumer := kafka.NewConsumer(config.Cfg.KafkaBroker, config.Cfg.KafkaTopic, "event-consumer-group")
 	defer consumer.Close()
 

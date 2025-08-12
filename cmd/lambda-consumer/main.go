@@ -16,14 +16,14 @@ import (
 	"github.com/Babatunde13/event-pipeline/internal/telemetry"
 )
 
-var redisClient *redis.Client
-
 func init() {
-	config.Load("event-pipeline-secret")
-	redisClient = redis.New(config.Cfg.RedisAddress)
 }
 
 func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
+	config.Load("event-pipeline-secret")
+	log.Printf("Received SQS event with %d records", len(sqsEvent.Records))
+	redisClient := redis.New(config.Cfg.RedisAddress)
+	log.Printf("Redis client initialized with address: %s", config.Cfg.RedisAddress)
 	for _, record := range sqsEvent.Records {
 		var e event.Event
 		if err := json.Unmarshal([]byte(record.Body), &e); err != nil {

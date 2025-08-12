@@ -61,6 +61,9 @@ func main() {
 	}
 	api := &router{producer: producer}
 	r.POST("/event", api.sendEvent)
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"error": "not found"})
+	})
 
 	ginLambda = ginadapter.New(r)
 	log.Println("Starting lambda server....")

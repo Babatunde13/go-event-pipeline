@@ -18,7 +18,7 @@ import (
 var redisClient *redis.Client
 
 func init() {
-	config.Load("lambda-consumer-secret")
+	config.Load("event-pipeline-secret")
 	redisClient = redis.New(config.Cfg.RedisAddress)
 }
 

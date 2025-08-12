@@ -18,7 +18,7 @@ import (
 var ginLambda *ginadapter.GinLambda
 
 func init() {
-	config.Load("kafka-producer-secret")
+	config.Load("event-pipeline-secret")
 }
 
 func router() {

@@ -18,7 +18,7 @@ import (
 var ginLambda *ginadapter.GinLambda
 
 func init() {
-	config.Load("eventbridge-producer-secret")
+	config.Load("event-pipeline-secret")
 }
 
 func router() {

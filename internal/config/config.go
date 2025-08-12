@@ -14,9 +14,6 @@ type Config struct {
 	KafkaTopic               string   `json:"KAFKA_TOPIC"`
 	EventBusName             string   `json:"EVENT_BUS_NAME"`
 	RedisAddress             string   `json:"REDIS_ADDRESS"`
-	PrometheusPort           string   `json:"PROMETHEUS_PORT"`
-	Environment              string   `json:"ENVIRONMENT"`
-	KafkaProducerPort        string   `json:"KAFKA_PRODUCER_PORT"`
 	PrometheusPushGatewayUrl string   `json:"PROMETHEUS_PUSH_GATEWAY_URL"`
 	AwsConfig                *aws.Config
 }
@@ -26,7 +23,7 @@ var Cfg Config
 func Load(secretName string) {
 	ctx := context.Background()
 
-	awsCfg, err := config.LoadDefaultConfig(ctx)
+	awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-2"))
 	if err != nil {
 		log.Fatalf("unable to load AWS config: %v", err)
 	}
@@ -44,8 +41,5 @@ func Load(secretName string) {
 		log.Fatalf("unable to unmarshal secrets: %v", err)
 	}
 
-	if Cfg.KafkaProducerPort == "" {
-		Cfg.KafkaProducerPort = "3000"
-	}
 	Cfg.AwsConfig = &awsCfg
 }

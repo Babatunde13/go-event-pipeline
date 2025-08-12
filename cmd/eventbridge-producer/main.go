@@ -32,7 +32,7 @@ func router() {
 		}
 
 		start := time.Now()
-		err := eb.PutEvent(context.Background(), "ecommerce.analytics", string(e.EventType), e)
+		err := eb.PutEvent(context.Background(), config.Cfg.EventBusSource, string(e.EventType), e)
 		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, true, err == nil)
 
 		if err != nil {

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -37,7 +38,7 @@ func main() {
 
 		jsonStr, _ := json.Marshal(e)
 		start := time.Now()
-		err = rds.Set(e.EventID, string(jsonStr), 5*time.Minute)
+		err = rds.Set(fmt.Sprintf("%s-kafka", e.EventID), string(jsonStr), 5*time.Minute)
 		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, false, err == nil)
 
 		if err != nil {

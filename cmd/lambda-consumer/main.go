@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -39,7 +40,7 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 		}
 
 		start := time.Now()
-		err = redisClient.Set(e.EventID, string(jsonStr), 5*time.Minute)
+		err = redisClient.Set(fmt.Sprintf("%s-kafka", e.EventID), string(jsonStr), 5*time.Minute)
 		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, false, err == nil)
 
 		if err != nil {

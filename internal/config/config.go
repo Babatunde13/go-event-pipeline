@@ -13,6 +13,7 @@ type Config struct {
 	KafkaBroker              string `json:"KAFKA_BROKER"`
 	KafkaTopic               string `json:"KAFKA_TOPIC"`
 	EventBusName             string `json:"EVENT_BUS_NAME"`
+	EventBusSource           string `json:"EVENT_BUS_SOURCE"`
 	RedisAddress             string `json:"REDIS_ADDRESS"`
 	PrometheusPushGatewayUrl string `json:"PROMETHEUS_PUSH_GATEWAY_URL"`
 	AwsConfig                *aws.Config

@@ -27,7 +27,7 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./provisioning:/etc/grafana/provisioning
-      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/grafana-dashboard.json
+      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
 
 volumes:
   grafana-storage:

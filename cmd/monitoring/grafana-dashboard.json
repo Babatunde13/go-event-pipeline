@@ -1,5 +1,4 @@
 {
-  "dashboard": {
     "id": null,
     "uid": "event-pipeline-dashboard",
     "title": "Event Pipeline Monitoring",
@@ -60,6 +59,4 @@
     ],
     "schemaVersion": 26,
     "version": 1
-  },
-  "overwrite": true
-}
+  }

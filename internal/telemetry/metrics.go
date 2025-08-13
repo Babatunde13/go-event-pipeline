@@ -8,59 +8,46 @@ import (
 )
 
 var (
-	kafkaEventsProcessed = prometheus.NewCounter(
+	totalEvents = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "events_processed_total_kafka",
-			Help: "Total number of kafka events processed.",
+			Name: "total_events",
+			Help: "Total number of processed events",
 		},
+		[]string{"system"}, // system = kafka | eventbridge
 	)
 
-	kafkaProcessingDuration = prometheus.NewHistogram(
+	eventDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "event_latency_seconds_kafka",
-			Help:    "Duration of event processing in seconds for kafka.",
-			Buckets: prometheus.DefBuckets,
+			Name:    "event_duration_seconds",
+			Help:    "Event processing duration in seconds",
+			Buckets: prometheus.LinearBuckets(0.1, 0.1, 20), // 0.1s to 2s
 		},
-	)
-
-	eventBridgeEventsProcessed = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "events_processed_total_eventbridge",
-			Help: "Total number of eventbridge events processed.",
-		},
-	)
-
-	eventBridgeProcessingDuration = prometheus.NewHistogram(
-		prometheus.HistogramOpts{
-			Name:    "event_latency_seconds_eventbridge",
-			Help:    "Duration of event processing in seconds for eventbridge.",
-			Buckets: prometheus.DefBuckets,
-		},
+		[]string{"system"},
 	)
 )
 
 func PushMetrics(url string, duration float64, isKafka, isProducer, success bool) {
-	var counter prometheus.Counter
-	var durationMetric prometheus.Histogram
+	var system string
 	if isKafka {
-		counter = kafkaEventsProcessed
-		durationMetric = kafkaProcessingDuration
+		system = "kafka"
 	} else {
-		counter = eventBridgeEventsProcessed
-		durationMetric = eventBridgeProcessingDuration
+		system = "eventbridge"
 	}
 	jobName := "consumers"
 	if isProducer {
 		jobName = "producers"
 	}
-	durationMetric.Observe(duration)
+	eventDuration.WithLabelValues(system).Observe(duration)
 	if success {
-		counter.Inc()
+		totalEvents.WithLabelValues(system).Inc()
 	}
 	err := push.New(url, jobName).
-		Collector(counter).
-		Collector(durationMetric).
+		Collector(totalEvents).
+		Collector(eventDuration).
+		Grouping("system", system).
+		Grouping("producer", jobName).
 		Push()
+
 	if err != nil {
 		log.Printf("Failed to push metrics to Pushgateway: %v", err)
 	}

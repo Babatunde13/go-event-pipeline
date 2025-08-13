@@ -1,62 +1,43 @@
 {
-    "id": null,
-    "uid": "event-pipeline-dashboard",
-    "title": "Event Pipeline Monitoring",
-    "timezone": "browser",
-    "panels": [
-      {
-        "type": "graph",
-        "title": "Event Processing Duration (seconds) for Kafka",
-        "targets": [
-          {
-            "expr": "event_latency_seconds_kafka",
-            "legendFormat": "{{instance}}",
-            "refId": "A"
-          }
-        ],
-        "id": 1,
-        "datasource": "Prometheus"
-      },
-      {
-        "type": "graph",
-        "title": "Total Events Processed for Kafka",
-        "targets": [
-          {
-            "expr": "events_processed_total_kafka",
-            "legendFormat": "{{instance}}",
-            "refId": "B"
-          }
-        ],
-        "id": 2,
-        "datasource": "Prometheus"
-      },
-      {
-        "type": "graph",
-        "title": "Event Processing Duration (seconds) for Event Bridge",
-        "targets": [
-          {
-            "expr": "event_latency_seconds_eventbridge",
-            "legendFormat": "{{instance}}",
-            "refId": "A"
-          }
-        ],
-        "id": 3,
-        "datasource": "Prometheus"
-      },
-      {
-        "type": "graph",
-        "title": "Total Events Processed  for Event Bridge",
-        "targets": [
-          {
-            "expr": "events_processed_total_eventbridge",
-            "legendFormat": "{{instance}}",
-            "refId": "B"
-          }
-        ],
-        "id": 4,
-        "datasource": "Prometheus"
-      }
-    ],
-    "schemaVersion": 26,
-    "version": 1
-  }
+  "id": null,
+  "uid": "event-pipeline-dashboard",
+  "title": "Event Pipeline Monitoring",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Average Processing Duration (Kafka vs EventBridge)",
+      "targets": [
+        {
+          "expr": "sum by (system) (rate(event_duration_seconds_sum[5m])) / sum by (system) (rate(event_duration_seconds_count[5m]))",
+          "legendFormat": "{{system}}"
+        }
+      ],
+      "datasource": "Prometheus"
+    },
+    {
+      "type": "graph",
+      "title": "Total Events Processed (Kafka vs EventBridge)",
+      "targets": [
+        {
+          "expr": "sum by (system) (increase(total_events[5m]))",
+          "legendFormat": "{{system}}"
+        }
+      ],
+      "datasource": "Prometheus"
+    },
+    {
+      "type": "graph",
+      "title": "p95 Processing Duration (Kafka vs EventBridge)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, system) (rate(event_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{system}}"
+        }
+      ],
+      "datasource": "Prometheus"
+    }
+  ],
+  "schemaVersion": 26,
+  "version": 1
+}

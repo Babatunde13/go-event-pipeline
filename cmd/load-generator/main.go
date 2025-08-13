@@ -14,9 +14,11 @@ import (
 	"time"
 
 	"github.com/Babatunde13/event-pipeline/internal/event"
+	"github.com/joho/godotenv"
 )
 
 func getBaseURL() string {
+	godotenv.Load() // Load environment variables from .env file
 	baseUrl := os.Getenv("BASE_URL")
 	if baseUrl == "" {
 		log.Fatal("BASE_URL environment variable is not set")
@@ -45,6 +47,7 @@ func main() {
 	targetType := flag.String("type", "", "Target producer type: kafka, eventbridge or empty for both")
 	flag.Parse()
 
+	fmt.Println("count =", *count, " rate =", *rate, " targetType =", *targetType)
 	targets := map[string]string{
 		"kafka":       fmt.Sprintf("%s/kafka", getBaseURL()),
 		"eventbridge": fmt.Sprintf("%s/eventbridge", getBaseURL()),
@@ -64,6 +67,7 @@ func main() {
 	products := []string{"prod1", "prod2", "prod3", "prod4"}
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 	delay := time.Second / time.Duration(*rate)
+	start := time.Now()
 
 	var wg sync.WaitGroup
 
@@ -84,4 +88,10 @@ func main() {
 	}
 
 	wg.Wait()
+	elapsed := time.Since(start)
+	fmt.Printf("Sent %d events in %s\n", *count*len(selectedTargets), elapsed)
+	fmt.Printf("Average time per event: %s\n", elapsed/time.Duration(*count*len(selectedTargets)))
+	fmt.Printf("Events per second: %.2f\n", float64(*count*len(selectedTargets))/elapsed.Seconds())
+	fmt.Printf("Total time: %s\n", elapsed)
+	fmt.Printf("Total events: %d\n", *count*len(selectedTargets))
 }

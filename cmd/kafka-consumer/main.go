@@ -3,22 +3,20 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
 	"github.com/Babatunde13/event-pipeline/internal/config"
+	"github.com/Babatunde13/event-pipeline/internal/database"
 	"github.com/Babatunde13/event-pipeline/internal/event"
 	"github.com/Babatunde13/event-pipeline/internal/kafka"
-	"github.com/Babatunde13/event-pipeline/internal/redis"
 	"github.com/Babatunde13/event-pipeline/internal/telemetry"
 )
 
 func main() {
 	config.Load("event-pipeline-secret")
 	log.Println("Configuration loaded successfully")
-	rds := redis.New(config.Cfg.RedisAddress)
-	log.Printf("Redis client initialized with address: %s", config.Cfg.RedisAddress)
+	ddb := database.NewDynamo(config.Cfg.AwsConfig)
 	consumer := kafka.NewConsumer(config.Cfg.KafkaBrokers, config.Cfg.KafkaTopic, "event-consumer-group")
 	defer consumer.Close()
 
@@ -38,13 +36,12 @@ func main() {
 			continue
 		}
 
-		jsonStr, _ := json.Marshal(e)
 		start := time.Now()
-		err = rds.Set(fmt.Sprintf("%s-kafka", e.EventID), string(jsonStr), 5*time.Minute)
+		err = e.Save(ctx, ddb, event.SourceKafka)
 		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, false, err == nil)
 
 		if err != nil {
-			log.Printf("failed to store in redis: %v", err)
+			log.Printf("failed to save: %v", err)
 		} else {
 			log.Printf("event processed: %s - %s", e.EventType, e.EventID)
 		}

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -11,8 +10,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 
 	"github.com/Babatunde13/event-pipeline/internal/config"
+	"github.com/Babatunde13/event-pipeline/internal/database"
 	"github.com/Babatunde13/event-pipeline/internal/event"
-	"github.com/Babatunde13/event-pipeline/internal/redis"
 	"github.com/Babatunde13/event-pipeline/internal/telemetry"
 )
 
@@ -23,8 +22,8 @@ func init() {
 func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 	config.Load("event-pipeline-secret")
 	log.Printf("Received SQS event with %d records", len(sqsEvent.Records))
-	redisClient := redis.New(config.Cfg.RedisAddress)
-	log.Printf("Redis client initialized with address: %s", config.Cfg.RedisAddress)
+	ddb := database.NewDynamo(config.Cfg.AwsConfig)
+	log.Printf("DynamoDB client initialized")
 	for _, record := range sqsEvent.Records {
 		var e event.Event
 		if err := json.Unmarshal([]byte(record.Body), &e); err != nil {
@@ -34,18 +33,12 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 
 		log.Printf("[SQS] received event: %s - %s", e.EventType, e.EventID)
 
-		jsonStr, err := json.Marshal(e)
-		if err != nil {
-			log.Printf("failed to serialize event: %v", err)
-			continue
-		}
-
 		start := time.Now()
-		err = redisClient.Set(fmt.Sprintf("%s-kafka", e.EventID), string(jsonStr), 5*time.Minute)
+		err := e.Save(ctx, ddb, event.SourceEventBridge)
 		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, false, err == nil)
 
 		if err != nil {
-			log.Printf("failed to store event in redis: %v", err)
+			log.Printf("failed to store event in DynamoDB: %v", err)
 		} else {
 		}
 	}

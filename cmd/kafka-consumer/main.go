@@ -38,7 +38,7 @@ func main() {
 
 		start := time.Now()
 		err = e.Save(ctx, ddb, event.SourceKafka)
-		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, false, err == nil)
+		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, float64(time.Since(start).Milliseconds()), true, false, err == nil)
 
 		if err != nil {
 			log.Printf("failed to save: %v", err)

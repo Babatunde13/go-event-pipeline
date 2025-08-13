@@ -37,7 +37,7 @@ func handler(ctx context.Context, ebEvent events.EventBridgeEvent) error {
 
 	start := time.Now()
 	err := e.Save(ctx, ddb, event.SourceEventBridge)
-	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, false, err == nil)
+	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, float64(time.Since(start).Milliseconds()), false, false, err == nil)
 
 	if err != nil {
 		log.Printf("failed to store event in DynamoDB: %v", err)

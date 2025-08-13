@@ -28,13 +28,12 @@ var (
 )
 
 type Event struct {
-	EventID     string                 `json:"event_id" dynamodbav:"event_id"` // partition key
-	EventType   EventType              `json:"event_type" dynamodbav:"event_type"`
-	UserID      string                 `json:"user_id" dynamodbav:"user_id"`
-	Timestamp   time.Time              `json:"timestamp,omitempty" dynamodbav:"-"`
-	Metadata    map[string]interface{} `json:"metadata" dynamodbav:"metadata"`
-	Source      EventSource            `dynamodbav:"source,omitempty"`
-	dbTimeStamp int                    `dynamodbav:"timestamp,omitempty"` // sort key for DynamoDB
+	EventID   string                 `json:"event_id" dynamodbav:"event_id"`             // partition key
+	Timestamp int                    `json:"timestamp,omitempty" dynamodbav:"timestamp"` // sort key for DynamoDB
+	EventType EventType              `json:"event_type" dynamodbav:"event_type"`
+	UserID    string                 `json:"user_id" dynamodbav:"user_id"`
+	Metadata  map[string]interface{} `json:"metadata" dynamodbav:"metadata"`
+	Source    EventSource            `dynamodbav:"source,omitempty"`
 }
 
 func New(eventType EventType, userID string, metadata map[string]interface{}) Event {
@@ -42,7 +41,7 @@ func New(eventType EventType, userID string, metadata map[string]interface{}) Ev
 		EventID:   uuid.NewString(),
 		EventType: eventType,
 		UserID:    userID,
-		Timestamp: time.Now().UTC(),
+		Timestamp: int(time.Now().UTC().UnixMilli()), // Store timestamp in milliseconds
 		Metadata:  metadata,
 	}
 }
@@ -59,7 +58,6 @@ func FromJSON(data []byte) (*Event, error) {
 
 func (e *Event) Save(ctx context.Context, dbClient database.Database, source EventSource) error {
 	e.Source = source
-	e.dbTimeStamp = int(time.Now().Unix())
 	err := dbClient.Save(ctx, "events", e)
 	if err != nil {
 		return err

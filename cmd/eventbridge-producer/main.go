@@ -38,7 +38,7 @@ func (r *router) sendEvent(c *gin.Context) {
 
 	log.Printf("Received event: %s - %s", e.EventType, e.EventID)
 	start := time.Now()
-	e.Timestamp = start.UTC() // Ensure timestamp is set to current time
+	e.Timestamp = int(start.UTC().UnixMilli()) // Ensure timestamp is set to current time
 	err := r.eb.PutEvent(context.Background(), config.Cfg.EventBusSource, string(e.EventType), e)
 	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, true, err == nil)
 

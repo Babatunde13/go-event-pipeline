@@ -38,7 +38,7 @@ func (r *router) sendEvent(c *gin.Context) {
 
 	log.Printf("Received event: %s - %s", e.EventType, e.EventID)
 	start := time.Now()
-	e.Timestamp = start.UTC() // Ensure timestamp is set to current time
+	e.Timestamp = int(start.UTC().UnixMilli()) // Ensure timestamp is set to current time
 	data, _ := e.ToJSON()
 	err := r.producer.SendMessage(context.Background(), e.EventID, data)
 	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, true, err == nil)

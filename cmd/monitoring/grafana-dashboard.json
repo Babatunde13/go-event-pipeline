@@ -9,7 +9,7 @@
         "title": "Event Processing Duration (seconds) for Kafka",
         "targets": [
           {
-            "expr": "event_processing_duration_seconds_kafka",
+            "expr": "event_latency_seconds_kafka",
             "legendFormat": "{{instance}}",
             "refId": "A"
           }
@@ -35,7 +35,7 @@
         "title": "Event Processing Duration (seconds) for Event Bridge",
         "targets": [
           {
-            "expr": "event_processing_duration_seconds_eventbridge",
+            "expr": "event_latency_seconds_eventbridge",
             "legendFormat": "{{instance}}",
             "refId": "A"
           }

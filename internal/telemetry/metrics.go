@@ -17,7 +17,7 @@ var (
 
 	kafkaProcessingDuration = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
-			Name:    "event_processing_duration_seconds_kafka",
+			Name:    "event_latency_seconds_kafka",
 			Help:    "Duration of event processing in seconds for kafka.",
 			Buckets: prometheus.DefBuckets,
 		},
@@ -32,7 +32,7 @@ var (
 
 	eventBridgeProcessingDuration = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
-			Name:    "event_processing_duration_seconds_eventbridge",
+			Name:    "event_latency_seconds_eventbridge",
 			Help:    "Duration of event processing in seconds for eventbridge.",
 			Buckets: prometheus.DefBuckets,
 		},

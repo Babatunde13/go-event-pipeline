@@ -74,4 +74,5 @@ jobs:
           script: |
             cd ~/event-pipeline-monitoring/cmd/monitoring
             docker compose pull
+            docker compose down
             docker compose up -d

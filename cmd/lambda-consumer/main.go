@@ -15,15 +15,16 @@ import (
 	"github.com/Babatunde13/event-pipeline/internal/telemetry"
 )
 
+var ddb database.Database
 func init() {
 	log.Println("Initializing Lambda function handler...")
+	config.Load("event-pipeline-secret")
+	ddb = database.NewDynamo(config.Cfg.AwsConfig)
+	log.Printf("DynamoDB client initialized")
 }
 
 func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
-	config.Load("event-pipeline-secret")
 	log.Printf("Received SQS event with %d records", len(sqsEvent.Records))
-	ddb := database.NewDynamo(config.Cfg.AwsConfig)
-	log.Printf("DynamoDB client initialized")
 	for _, record := range sqsEvent.Records {
 		var e event.Event
 		if err := json.Unmarshal([]byte(record.Body), &e); err != nil {

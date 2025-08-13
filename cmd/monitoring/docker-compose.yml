@@ -6,6 +6,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-storage:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     depends_on:
@@ -15,6 +16,8 @@ services:
     image: prom/pushgateway
     ports:
       - "9091:9091"
+    volumes:
+      - pushgateway-storage:/data
 
   grafana:
     image: grafana/grafana
@@ -32,3 +35,5 @@ services:
 
 volumes:
   grafana-storage:
+  prometheus-storage:
+  pushgateway-storage:

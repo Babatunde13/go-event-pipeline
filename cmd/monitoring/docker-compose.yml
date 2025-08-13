@@ -26,8 +26,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./provisioning:/etc/grafana/provisioning
-      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+      - ./provisioning/dashboards:/var/lib/grafana/dashboards
+      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/grafana-dashboard.json
 
 volumes:
   grafana-storage:

@@ -16,6 +16,7 @@ import (
 )
 
 var ddb database.Database
+
 func init() {
 	log.Println("Initializing Lambda function handler...")
 	config.Load("event-pipeline-secret")
@@ -23,26 +24,25 @@ func init() {
 	log.Printf("DynamoDB client initialized")
 }
 
-func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
-	log.Printf("Received SQS event with %d records", len(sqsEvent.Records))
-	for _, record := range sqsEvent.Records {
-		var e event.Event
-		if err := json.Unmarshal([]byte(record.Body), &e); err != nil {
-			log.Printf("failed to parse event: %v", err)
-			continue
-		}
+func handler(ctx context.Context, ebEvent events.EventBridgeEvent) error {
+	log.Printf("Received EventBridge event: source=%s type=%s id=%s", ebEvent.Source, ebEvent.DetailType, ebEvent.ID)
 
-		log.Printf("[SQS] received event: %s - %s", e.EventType, e.EventID)
-
-		start := time.Now()
-		err := e.Save(ctx, ddb, event.SourceEventBridge)
-		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, false, err == nil)
-
-		if err != nil {
-			log.Printf("failed to store event in DynamoDB: %v", err)
-		} else {
-		}
+	var e event.Event
+	if err := json.Unmarshal(ebEvent.Detail, &e); err != nil {
+		log.Printf("failed to parse event detail: %v", err)
+		return nil // continue to next
 	}
+
+	log.Printf("[EventBridge] received event: %s - %s", e.EventType, e.EventID)
+
+	start := time.Now()
+	err := e.Save(ctx, ddb, event.SourceEventBridge)
+	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), false, false, err == nil)
+
+	if err != nil {
+		log.Printf("failed to store event in DynamoDB: %v", err)
+	}
+
 	return nil
 }
 

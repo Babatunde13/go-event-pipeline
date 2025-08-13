@@ -13,7 +13,7 @@ var (
 			Name: "total_events",
 			Help: "Total number of processed events",
 		},
-		[]string{"system"}, // system = kafka | eventbridge
+		[]string{"system", "role"}, // system = kafka | eventbridge, role = producer | consumer
 	)
 
 	eventDuration = prometheus.NewHistogramVec(
@@ -22,30 +22,26 @@ var (
 			Help:    "Event processing duration in seconds",
 			Buckets: prometheus.LinearBuckets(0.1, 0.1, 20), // 0.1s to 2s
 		},
-		[]string{"system"},
+		[]string{"system", "role"},
 	)
 )
 
 func PushMetrics(url string, duration float64, isKafka, isProducer, success bool) {
-	var system string
+	system := "eventbridge"
 	if isKafka {
 		system = "kafka"
-	} else {
-		system = "eventbridge"
 	}
-	jobName := "consumers"
+	role := "consumers"
 	if isProducer {
-		jobName = "producers"
+		role = "producers"
 	}
-	eventDuration.WithLabelValues(system).Observe(duration)
+	eventDuration.WithLabelValues(system, role).Observe(duration)
 	if success {
-		totalEvents.WithLabelValues(system).Inc()
+		totalEvents.WithLabelValues(system, role).Inc()
 	}
-	err := push.New(url, jobName).
+	err := push.New(url, "event_pipeline").
 		Collector(totalEvents).
 		Collector(eventDuration).
-		Grouping("system", system).
-		Grouping("producer", jobName).
 		Push()
 
 	if err != nil {

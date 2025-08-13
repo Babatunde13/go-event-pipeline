@@ -1,8 +1,4 @@
 scrape_configs:
-  - job_name: 'producers'
-    static_configs:
-      - targets: ['pushgateway:9091']
-
-  - job_name: 'consumers'
+  - job_name: 'event_pipeline'
     static_configs:
       - targets: ['pushgateway:9091']

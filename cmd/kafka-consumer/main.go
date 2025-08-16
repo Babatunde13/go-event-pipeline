@@ -70,6 +70,7 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 
 func handler(ctx context.Context, payload interface{}) {
 	log.Println("Kafka consumer initialized with topic:", config.Cfg.KafkaTopic)
+	log.Println("Received payload: ", payload)
 	
 	m, ok := payload.(kafkaEventMap)
 	// Try map shape first: {"records": {"topic-0": [ {...}, ... ]}}

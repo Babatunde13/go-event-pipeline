@@ -22,7 +22,7 @@ var (
 			Help:    "Event processing duration in seconds",
 			Buckets: prometheus.LinearBuckets(0.1, 0.1, 20), // 0.1s to 2s
 		},
-		[]string{"system", "role"},
+		[]string{"system", "role"}, // system = kafka | eventbridge, role = producer | consumer
 	)
 )
 
@@ -42,7 +42,7 @@ func PushMetrics(url string, duration float64, isKafka, isProducer, success bool
 	err := push.New(url, "event_pipeline").
 		Collector(totalEvents).
 		Collector(eventDuration).
-		Push()
+		Add()
 
 	if err != nil {
 		log.Printf("Failed to push metrics to Pushgateway: %v", err)

@@ -9,8 +9,8 @@
       "title": "Average Processing Duration (Kafka vs EventBridge)",
       "targets": [
         {
-          "expr": "sum by (system) (rate(event_duration_seconds_sum[5m])) / sum by (system) (rate(event_duration_seconds_count[5m]))",
-          "legendFormat": "{{system}}"
+          "expr": "sum by (system, role) (rate(event_duration_seconds_sum{job=\"event_pipeline\"}[5m])) / sum by (system, role) (rate(event_duration_seconds_count{job=\"event_pipeline\"}[5m]))",
+          "legendFormat": "{{system}} {{role}}"
         }
       ],
       "datasource": "Prometheus"
@@ -20,8 +20,8 @@
       "title": "Total Events Processed (Kafka vs EventBridge)",
       "targets": [
         {
-          "expr": "sum by (system) (increase(total_events[5m]))",
-          "legendFormat": "{{system}}"
+          "expr": "sum by (system, role) (increase(total_events{job=\"event_pipeline\"}[5m]))",
+          "legendFormat": "{{system}} {{role}}"
         }
       ],
       "datasource": "Prometheus"
@@ -31,8 +31,8 @@
       "title": "p95 Processing Duration (Kafka vs EventBridge)",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, system) (rate(event_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{system}}"
+          "expr": "histogram_quantile(0.95, sum by (le, system, role) (rate(event_duration_seconds_bucket{job=\"event_pipeline\"}[5m])))",
+          "legendFormat": "{{system}} {{role}}"
         }
       ],
       "datasource": "Prometheus"
@@ -42,8 +42,8 @@
       "title": "p99 Processing Duration (Kafka vs EventBridge)",
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le, system) (rate(event_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{system}}"
+          "expr": "histogram_quantile(0.99, sum by (le, system, role) (rate(event_duration_seconds_bucket{job=\"event_pipeline\"}[5m])))",
+          "legendFormat": "{{system}} {{role}}"
         }
       ],
       "datasource": "Prometheus"

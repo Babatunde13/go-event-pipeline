@@ -32,22 +32,21 @@ func createTokenProvider() (*kafka.OAuthBearerToken, error) {
 	}
 	return &bearerToken, nil
 }
-func getKafkaConfig() (*kafka.ConfigMap, error) {
+func getKafkaConfig() (*kafka.ConfigMap, *kafka.OAuthBearerToken, error) {
 	tokenProvider, err := createTokenProvider()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	return &kafka.ConfigMap{
-		"bootstrap.servers":               config.Cfg.Brokers,
-		"security.protocol":               "SASL_SSL",
-		"sasl.mechanisms":                 "OAUTHBEARER",
-		"sasl.oauthbearer.token.provider": tokenProvider,
-		"ssl.ca.pem":                      config.Cfg.CaCert,
-	}, nil
+		"bootstrap.servers": config.Cfg.Brokers,
+		"security.protocol": "SASL_SSL",
+		"sasl.mechanisms":   "OAUTHBEARER",
+		"ssl.ca.pem":        config.Cfg.CaCert,
+	}, tokenProvider, nil
 }
 
 func NewProducer() (*Producer, error) {
-	kafkaConfig, err := getKafkaConfig()
+	kafkaConfig, tokenProvider, err := getKafkaConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +54,14 @@ func NewProducer() (*Producer, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	producer.SetOAuthBearerToken(*tokenProvider)
 	return &Producer{
 		producer: producer,
 	}, nil
 }
 
 func CreateTopic(ctx context.Context, topicName string, numPartitions int, replicationFactor int) error {
-	config, err := getKafkaConfig()
+	config, tokenProvider, err := getKafkaConfig()
 	if err != nil {
 		return err
 	}
@@ -71,6 +70,7 @@ func CreateTopic(ctx context.Context, topicName string, numPartitions int, repli
 		return err
 	}
 	defer admin.Close()
+	admin.SetOAuthBearerToken(*tokenProvider)
 
 	// Define topic spec
 	topic := kafka.TopicSpecification{
@@ -118,7 +118,7 @@ func (p *Producer) SendMessage(ctx context.Context, key string, value []byte) er
 }
 
 func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, error) {
-	config, err := getKafkaConfig()
+	config, tokenProvider, err := getKafkaConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -134,6 +134,7 @@ func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, err
 	if err != nil {
 		return nil, err
 	}
+	consumer.SetOAuthBearerToken(*tokenProvider)
 	err = consumer.SubscribeTopics([]string{topic}, nil)
 	if err != nil {
 		consumer.Close()

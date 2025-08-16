@@ -56,12 +56,11 @@ func main() {
 	r := gin.Default()
 	r.Use(gin.Recovery())
 	producer, err := kafka.NewProducer()
-	log.Println("Kafka producer initialized with brokers:", config.Cfg.KafkaBrokers)
-
-	err = kafka.CreateTopic(context.Background(), config.Cfg.KafkaTopic, 3, 3)
 	if err != nil {
-		log.Println("topic creation error (might already exist):", err)
+		log.Fatalf("failed to create Kafka producer: %v", err)
 	}
+	log.Println("Kafka producer initialized with brokers:", config.Cfg.Brokers)
+
 	api := &router{producer: producer}
 	r.POST("/event/kafka", api.sendEvent)
 	r.NoRoute(func(c *gin.Context) {

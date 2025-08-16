@@ -50,6 +50,7 @@ require (
 
 require (
 	github.com/aws/aws-lambda-go v1.49.0
+	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2 v1.38.0
 	github.com/aws/aws-sdk-go-v2/config v1.30.3
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.3

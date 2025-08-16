@@ -6,31 +6,43 @@ import (
 	"time"
 
 	"github.com/Babatunde13/event-pipeline/internal/config"
+	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 type Producer struct {
-	writer *kafka.Producer
+	producer *kafka.Producer
 }
 
 type Consumer struct {
-	reader *kafka.Consumer
+	consumer *kafka.Consumer
 }
 
-func getKafkaConfig() (*kafka.ConfigMap, error) {
-	cred, err := config.Cfg.AwsConfig.Credentials.Retrieve(context.Background())
+func createTokenProvider() (*kafka.OAuthBearerToken, error) {
+	token, tokenExpirationTime, err := signer.GenerateAuthToken(context.TODO(), "us-east-2")
 	if err != nil {
 		return nil, err
 	}
-
+	seconds := tokenExpirationTime / 1000
+	nanoseconds := (tokenExpirationTime % 1000) * 1000000
+	bearerToken := kafka.OAuthBearerToken{
+		TokenValue: token,
+		Expiration: time.Unix(seconds, nanoseconds),
+	}
+	return &bearerToken, nil
+}
+func getKafkaConfig() (*kafka.ConfigMap, error) {
+	tokenProvider, err := createTokenProvider()
+	if err != nil {
+		return nil, err
+	}
 	return &kafka.ConfigMap{
-		"bootstrap.servers":           config.Cfg.Brokers,
-		"security.protocol":           "SASL_SSL",
-		"sasl.mechanism":              "AWS_MSK_IAM",
-		"sasl.aws_msk_iam.access.key": cred.AccessKeyID,
-		"sasl.aws_msk_iam.secret.key": cred.SecretAccessKey,
-		"ssl.ca.pem":                  config.Cfg.CaCert,
+		"bootstrap.servers":               config.Cfg.Brokers,
+		"security.protocol":               "SASL_SSL",
+		"sasl.mechanisms":                 "OAUTHBEARER",
+		"sasl.oauthbearer.token.provider": tokenProvider,
+		"ssl.ca.pem":                      config.Cfg.CaCert,
 	}, nil
 }
 
@@ -39,13 +51,13 @@ func NewProducer() (*Producer, error) {
 	if err != nil {
 		return nil, err
 	}
-	writer, err := kafka.NewProducer(kafkaConfig)
+	producer, err := kafka.NewProducer(kafkaConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Producer{
-		writer: writer,
+		producer: producer,
 	}, nil
 }
 
@@ -92,7 +104,7 @@ func (p *Producer) SendMessage(ctx context.Context, key string, value []byte) er
 		},
 	}
 	deliveryChan := make(chan kafka.Event, 1)
-	err := p.writer.Produce(&msg, deliveryChan)
+	err := p.producer.Produce(&msg, deliveryChan)
 	if err != nil {
 		return err
 	}
@@ -118,23 +130,23 @@ func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, err
 	config.SetKey("max.poll.interval.ms", 300000) // 5 minutes
 	config.SetKey("fetch.min.bytes", 10000)       // 10KB
 	config.SetKey("fetch.max.bytes", 10000000)    // 10MB
-	reader, err := kafka.NewConsumer(config)
+	consumer, err := kafka.NewConsumer(config)
 	if err != nil {
 		return nil, err
 	}
-	err = reader.SubscribeTopics([]string{topic}, nil)
+	err = consumer.SubscribeTopics([]string{topic}, nil)
 	if err != nil {
-		reader.Close()
+		consumer.Close()
 		return nil, err
 	}
 	log.Printf("Kafka consumer initialized with topic: %s", topic)
-	return &Consumer{reader: reader}, nil
+	return &Consumer{consumer: consumer}, nil
 }
 
 func (c *Consumer) ReadMessage(timeout time.Duration) (*kafka.Message, error) {
-	return c.reader.ReadMessage(timeout)
+	return c.consumer.ReadMessage(timeout)
 }
 
 func (c *Consumer) Close() error {
-	return c.reader.Close()
+	return c.consumer.Close()
 }

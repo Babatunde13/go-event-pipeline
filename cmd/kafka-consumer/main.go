@@ -68,26 +68,27 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 	}
 }
 
-func handler(ctx context.Context, payload []byte) {
+func handler(ctx context.Context, payload interface{}) {
 	log.Println("Kafka consumer initialized with topic:", config.Cfg.KafkaTopic)
-
-	log.Printf("Received payload of size %d bytes, %v", len(payload), payload)
+	
+	m, ok := payload.(kafkaEventMap)
 	// Try map shape first: {"records": {"topic-0": [ {...}, ... ]}}
-	var m kafkaEventMap
-	if err := json.Unmarshal(payload, &m); err == nil && len(m.Records) > 0 {
+	if ok && len(m.Records) > 0 {
 		for partKey, batch := range m.Records {
 			log.Printf("Processing partition key: %s with %d records", partKey, len(batch))
 			processBatch(ctx, batch)
 		}
 		return
-	}
-
-	// Try array shape: {"records": [ {...}, ... ]}
-	var a kafkaEventArray
-	if err := json.Unmarshal(payload, &a); err == nil && len(a.Records) > 0 {
-		log.Printf("Processing array of %d records", len(a.Records))
-		processBatch(ctx, a.Records)
-		return
+	} else if !ok {
+		a, ok := payload.(kafkaEventArray)
+		// Try array shape: {"records": [ {...}, ... ]}
+		if ok && len(a.Records) > 0 {
+			log.Printf("Processing array of %d records", len(a.Records))
+			processBatch(ctx, a.Records)
+			return
+		}
+	} else {
+		log.Printf("Received payload of unknown shape: %T", payload)
 	}
 }
 

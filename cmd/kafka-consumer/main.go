@@ -15,6 +15,13 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+type kafkaEventMap struct {
+	Records map[string][]events.KafkaRecord `json:"records"`
+}
+type kafkaEventArray struct {
+	Records []events.KafkaRecord `json:"records"`
+}
+
 var ddb database.Database
 
 func init() {
@@ -24,38 +31,62 @@ func init() {
 	log.Printf("DynamoDB client initialized")
 }
 
-func handler(ctx context.Context, e events.KafkaEvent) {
+func processBatch(ctx context.Context, batch []events.KafkaRecord) {
+	for _, record := range batch {
+		msg, err := base64.StdEncoding.DecodeString(record.Value)
+		if err != nil {
+			log.Printf("failed to decode message: %v", err)
+			continue
+		}
+		if len(msg) == 0 {
+			log.Println("Empty message, skipping")
+			continue
+		}
+
+		log.Printf("Message: topic=%s partition=%d offset=%d key=%q",
+			record.Topic, record.Partition, record.Offset, string(record.Key))
+
+		var e event.Event
+		if err := json.Unmarshal(msg, &e); err != nil {
+			log.Printf("Invalid event data: %v", err)
+			continue
+		}
+
+		start := time.Now()
+		err = e.Save(ctx, ddb, event.SourceKafka)
+		telemetry.PushMetrics(
+			config.Cfg.PrometheusPushGatewayUrl,
+			float64(time.Since(start).Milliseconds()),
+			true, false, err == nil,
+		)
+
+		if err != nil {
+			log.Printf("Save failed: %v", err)
+		} else {
+			log.Printf("Event processed: %s - %s", e.EventType, e.EventID)
+		}
+	}
+}
+
+func handler(ctx context.Context, payload []byte) {
 	log.Println("Kafka consumer initialized with topic:", config.Cfg.KafkaTopic)
 
-	for partition, records := range e.Records {
-		log.Printf("Processing partition: %s with %d records", partition, len(records))
-		for _, record := range records {
-			msg, err := base64.StdEncoding.DecodeString(record.Value)
-			if err != nil {
-				log.Printf("failed to decode message: %v", err)
-				continue
-			}
-			log.Printf("Received message: topic=%s partition=%d offset=%d key=%s, message=%s", record.Topic, record.Partition, record.Offset, record.Key, msg)
-			if len(msg) == 0 {
-				log.Println("Received empty message, skipping")
-				continue
-			}
-			var e event.Event
-			if err = json.Unmarshal([]byte(msg), &e); err != nil {
-				log.Printf("invalid event data: %v", err)
-				continue
-			}
-
-			start := time.Now()
-			err = e.Save(ctx, ddb, event.SourceKafka)
-			telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, float64(time.Since(start).Milliseconds()), true, false, err == nil)
-
-			if err != nil {
-				log.Printf("failed to save: %v", err)
-			} else {
-				log.Printf("event processed: %s - %s", e.EventType, e.EventID)
-			}
+	// Try map shape first: {"records": {"topic-0": [ {...}, ... ]}}
+	var m kafkaEventMap
+	if err := json.Unmarshal(payload, &m); err == nil && len(m.Records) > 0 {
+		for partKey, batch := range m.Records {
+			log.Printf("Processing partition key: %s with %d records", partKey, len(batch))
+			processBatch(ctx, batch)
 		}
+		return
+	}
+
+	// Try array shape: {"records": [ {...}, ... ]}
+	var a kafkaEventArray
+	if err := json.Unmarshal(payload, &a); err == nil && len(a.Records) > 0 {
+		log.Printf("Processing array of %d records", len(a.Records))
+		processBatch(ctx, a.Records)
+		return
 	}
 }
 

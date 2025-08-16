@@ -15,13 +15,6 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type kafkaEventMap struct {
-	Records map[string][]events.KafkaRecord `json:"records"`
-}
-type kafkaEventArray struct {
-	Records []events.KafkaRecord `json:"records"`
-}
-
 var ddb database.Database
 
 func init() {
@@ -42,7 +35,6 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 			log.Println("Empty message, skipping")
 			continue
 		}
-
 		log.Printf("Message: topic=%s partition=%d offset=%d key=%q",
 			record.Topic, record.Partition, record.Offset, string(record.Key))
 
@@ -68,28 +60,17 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 	}
 }
 
-func handler(ctx context.Context, payload interface{}) {
+func handler(ctx context.Context, payload events.KafkaEvent) {
 	log.Println("Kafka consumer initialized with topic:", config.Cfg.KafkaTopic)
 	log.Println("Received payload: ", payload)
-	
-	m, ok := payload.(kafkaEventMap)
-	// Try map shape first: {"records": {"topic-0": [ {...}, ... ]}}
-	if ok && len(m.Records) > 0 {
-		for partKey, batch := range m.Records {
+
+	if len(payload.Records) > 0 {
+		for partKey, batch := range payload.Records {
 			log.Printf("Processing partition key: %s with %d records", partKey, len(batch))
 			processBatch(ctx, batch)
 		}
-		return
-	} else if !ok {
-		a, ok := payload.(kafkaEventArray)
-		// Try array shape: {"records": [ {...}, ... ]}
-		if ok && len(a.Records) > 0 {
-			log.Printf("Processing array of %d records", len(a.Records))
-			processBatch(ctx, a.Records)
-			return
-		}
 	} else {
-		log.Printf("Received payload of unknown shape: %T", payload)
+		log.Printf("Received empty payload for %s", payload.EventSourceARN)
 	}
 }
 

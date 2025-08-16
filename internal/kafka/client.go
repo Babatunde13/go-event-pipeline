@@ -117,7 +117,7 @@ func (p *Producer) SendMessage(ctx context.Context, key string, value []byte) er
 	return nil
 }
 
-func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, error) {
+func NewConsumer(topic string, groupID string) (*Consumer, error) {
 	config, tokenProvider, err := getKafkaConfig()
 	if err != nil {
 		return nil, err

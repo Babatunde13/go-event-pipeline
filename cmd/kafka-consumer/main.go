@@ -24,20 +24,18 @@ func init() {
 	log.Printf("DynamoDB client initialized")
 }
 
-func handler(ctx context.Context, data events.KafkaEvent) {
+func handler(ctx context.Context, e events.KafkaEvent) {
 	log.Println("Kafka consumer initialized with topic:", config.Cfg.KafkaTopic)
 
-	for partition, batch := range data.Records {
-		log.Printf("Processing partition: %s with %d records", partition, len(batch))
-		for _, record := range batch {
+	for partition, records := range e.Records {
+		log.Printf("Processing partition: %s with %d records", partition, len(records))
+		for _, record := range records {
 			msg, err := base64.StdEncoding.DecodeString(record.Value)
 			if err != nil {
 				log.Printf("failed to decode message: %v", err)
 				continue
 			}
-			log.Printf("Received message: topic=%s partition=%d offset=%d key=%s", record.Topic, record.Partition, record.Offset, record.Key)
-			// decode the message into an Event struct
-			log.Printf("Processing message: %s", msg)
+			log.Printf("Received message: topic=%s partition=%d offset=%d key=%s, message=%s", record.Topic, record.Partition, record.Offset, record.Key, msg)
 			if len(msg) == 0 {
 				log.Println("Received empty message, skipping")
 				continue

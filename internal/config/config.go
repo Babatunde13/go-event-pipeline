@@ -25,6 +25,36 @@ type Config struct {
 
 var Cfg Config
 
+func parseCaCert(cert string) string {
+	// Remove any leading or trailing whitespace
+	cert = strings.TrimSpace(cert)
+	// Ensure BEGIN and END markers are separate
+	cert = strings.ReplaceAll(cert, "-----BEGIN CERTIFICATE----- ", "-----BEGIN CERTIFICATE-----\n")
+	cert = strings.ReplaceAll(cert, " -----END CERTIFICATE-----", "\n-----END CERTIFICATE-----")
+
+	// Extract the middle base64 part
+	parts := strings.Split(cert, "\n")
+	if len(parts) < 2 {
+		log.Fatal("Invalid certificate format")
+	}
+
+	begin := parts[0]
+	end := parts[len(parts)-1]
+
+	// Split the base64 content by spaces → insert newlines every ~64 chars
+	body := strings.ReplaceAll(strings.Join(parts[1:len(parts)-1], ""), " ", "")
+	var chunks []string
+	for len(body) > 64 {
+		chunks = append(chunks, body[:64])
+		body = body[64:]
+	}
+	if len(body) > 0 {
+		chunks = append(chunks, body)
+	}
+
+	return begin + "\n" + strings.Join(chunks, "\n") + "\n" + end
+}
+
 func Load(secretName string) {
 	ctx := context.Background()
 
@@ -52,5 +82,5 @@ func Load(secretName string) {
 		Cfg.KafkaBrokers = append(Cfg.KafkaBrokers, strings.TrimSpace(broker))
 	}
 
-	Cfg.CaCert = strings.ReplaceAll(Cfg.CaCert, "\\n", "\n")
+	Cfg.CaCert = parseCaCert(Cfg.CaCert)
 }

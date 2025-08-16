@@ -18,10 +18,8 @@ import (
 var ddb database.Database
 
 func init() {
-	log.Println("Initializing Lambda function handler...")
 	config.Load("event-pipeline-secret")
 	ddb = database.NewDynamo(config.Cfg.AwsConfig)
-	log.Printf("DynamoDB client initialized")
 }
 
 func handler(ctx context.Context, ebEvent events.EventBridgeEvent) error {
@@ -37,7 +35,11 @@ func handler(ctx context.Context, ebEvent events.EventBridgeEvent) error {
 
 	start := time.Now()
 	err := e.Save(ctx, ddb, event.SourceEventBridge)
-	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, float64(time.Since(start).Milliseconds()), false, false, err == nil)
+	telemetry.PushMetrics(
+		config.Cfg.PrometheusPushGatewayUrl,
+		float64(time.Since(start).Milliseconds()),
+		false, false, err == nil,
+	)
 
 	if err != nil {
 		log.Printf("failed to store event in DynamoDB: %v", err)

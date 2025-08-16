@@ -30,18 +30,12 @@ go-event-pipeline/
     │ ├── event/ # Event models and schema
     │ ├── kafka/ # Kafka utilities
     │ ├── eventbridge/ # EventBridge utilities
-    │ ├── redis/ # Redis utilities
+    │ ├── database/ # Database(dynamoDB) utilities
     │ ├── telemetry/ # Prometheus, logging, etc.
     │ └── config/ # Configuration loader
     │
-    ├── terraform/ # Infrastructure-as-Code
-    │ ├── kafka/
-    │ ├── eventbridge/
-    │ ├── redis/
-    │ └── monitoring/
-    │
-    ├── deployments/ # Dockerfiles, GitHub Actions, etc.
     ├── go.mod
+    ├── Makefile
     └── README.md
 ```
 ---
@@ -51,12 +45,12 @@ go-event-pipeline/
 ### Kafka-Based Pipeline
 - Producer sends events to Kafka topic
 - Consumer reads and processes events
-- Redis is the final data sink
+- Dynamo is the final data sink
 
 ### EventBridge-Based Pipeline
 - Producer pushes events to EventBridge bus
 - EventBridge routes to Lambda or Go consumer
-- Redis stores the processed events
+- DynamoDB stores the processed events(dynamo is chosen over redis because of the intuitive UI for fetching data)
 
 ---
 
@@ -81,8 +75,7 @@ go-event-pipeline/
 ## 🛠️ Tools & Technologies
 
 - Language: **Go**
-- Cloud: **AWS** (MSK, EventBridge, Lambda, Redis, IAM)
-- Infra as Code: **Terraform**
+- Cloud: **AWS** (MSK, EventBridge, Lambda, Redis, IAM, Event Sourcing, VPC)
 - Monitoring: **Prometheus + Grafana**
 - Load Simulation: **Custom Go generator**
 
@@ -92,8 +85,7 @@ go-event-pipeline/
 
 - [Apache Kafka](https://kafka.apache.org/)
 - [AWS EventBridge](https://docs.aws.amazon.com/eventbridge/)
-- [Redis](https://redis.io/)
-- [Terraform](https://www.terraform.io/)
+- [DynamoDB](https://docs.aws.amazon.com/dynamodb)
 - [Prometheus](https://prometheus.io/)
 - [Grafana](https://grafana.com/)
 
@@ -101,6 +93,6 @@ go-event-pipeline/
 
 ## 📖 Author
 
-**Babatunde Koiki**  
+**Babatunde Koiki**
 Final Year B.Sc. Computer Science – IU International University  
 Thesis Supervisor: Prof. Dr. Stefan Remhof  

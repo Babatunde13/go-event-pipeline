@@ -19,9 +19,7 @@ var ddb database.Database
 
 func init() {
 	config.Load("event-pipeline-secret")
-	log.Println("Configuration loaded successfully")
 	ddb = database.NewDynamo(config.Cfg.AwsConfig)
-	log.Printf("DynamoDB client initialized")
 }
 
 func processBatch(ctx context.Context, batch []events.KafkaRecord) {
@@ -62,7 +60,6 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 
 func handler(ctx context.Context, payload events.KafkaEvent) {
 	log.Println("Kafka consumer initialized with topic:", config.Cfg.KafkaTopic)
-	log.Println("Received payload: ", payload)
 
 	if len(payload.Records) > 0 {
 		for partKey, batch := range payload.Records {

@@ -36,6 +36,17 @@
         }
       ],
       "datasource": "Prometheus"
+    },
+    {
+      "type": "graph",
+      "title": "p99 Processing Duration (Kafka vs EventBridge)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum by (le, system) (rate(event_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{system}}"
+        }
+      ],
+      "datasource": "Prometheus"
     }
   ],
   "schemaVersion": 26,

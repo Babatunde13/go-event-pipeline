@@ -71,6 +71,7 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 func handler(ctx context.Context, payload []byte) {
 	log.Println("Kafka consumer initialized with topic:", config.Cfg.KafkaTopic)
 
+	log.Printf("Received payload of size %d bytes, %v", len(payload), payload)
 	// Try map shape first: {"records": {"topic-0": [ {...}, ... ]}}
 	var m kafkaEventMap
 	if err := json.Unmarshal(payload, &m); err == nil && len(m.Records) > 0 {

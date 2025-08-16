@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,15 +24,6 @@ type Config struct {
 }
 
 var Cfg Config
-
-func createTempCAFile(cert string) (string, error) {
-	tmpPath := filepath.Join(os.TempDir(), "kafka-ca.pem")
-	err := os.WriteFile(tmpPath, []byte(cert), 0644)
-	if err != nil {
-		return "", err
-	}
-	return tmpPath, nil
-}
 
 func Load(secretName string) {
 	ctx := context.Background()
@@ -63,10 +52,5 @@ func Load(secretName string) {
 		Cfg.KafkaBrokers = append(Cfg.KafkaBrokers, strings.TrimSpace(broker))
 	}
 
-	if Cfg.KafkaCaCertPath == "" {
-		Cfg.KafkaCaCertPath, err = createTempCAFile(Cfg.CaCert)
-		if err != nil {
-			log.Fatalf("unable to create temporary CA file: %v", err)
-		}
-	}
+	Cfg.CaCert = strings.ReplaceAll(Cfg.CaCert, "\\n", "\n")
 }

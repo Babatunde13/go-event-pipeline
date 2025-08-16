@@ -55,6 +55,10 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(gin.Recovery())
+	err := kafka.CreateTopic(context.TODO(), config.Cfg.KafkaTopic, 3, 3)
+	if err != nil {
+		log.Fatalf("failed to create Kafka topic: %v", err)
+	}
 	producer, err := kafka.NewProducer()
 	if err != nil {
 		log.Fatalf("failed to create Kafka producer: %v", err)

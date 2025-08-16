@@ -55,11 +55,10 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(gin.Recovery())
-	producer := kafka.NewProducer(config.Cfg.KafkaBrokers, config.Cfg.KafkaTopic)
+	producer, err := kafka.NewProducer()
 	log.Println("Kafka producer initialized with brokers:", config.Cfg.KafkaBrokers)
-	defer producer.Close()
 
-	err := producer.CreateTopic(context.Background(), config.Cfg.KafkaTopic, 1, 1)
+	err = kafka.CreateTopic(context.Background(), config.Cfg.KafkaTopic, 3, 3)
 	if err != nil {
 		log.Println("topic creation error (might already exist):", err)
 	}

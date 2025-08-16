@@ -2,84 +2,137 @@ package kafka
 
 import (
 	"context"
+	"log"
 	"time"
 
-	"github.com/segmentio/kafka-go"
+	"github.com/Babatunde13/event-pipeline/internal/config"
+
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 type Producer struct {
-	writer *kafka.Writer
+	writer *kafka.Producer
 }
 
 type Consumer struct {
-	reader *kafka.Reader
+	reader *kafka.Consumer
 }
 
-func NewProducer(brokers []string, topic string) *Producer {
-	writer := &kafka.Writer{
-		Addr:         kafka.TCP(brokers...),
-		Topic:        topic,
-		Balancer:     &kafka.LeastBytes{},
-		RequiredAcks: kafka.RequireAll,
-		Async:        false,
+func getKafkaConfig() (*kafka.ConfigMap, error) {
+	cred, err := config.Cfg.AwsConfig.Credentials.Retrieve(context.Background())
+	if err != nil {
+		return nil, err
 	}
-	return &Producer{writer: writer}
+
+	return &kafka.ConfigMap{
+		"bootstrap.servers":           config.Cfg.Brokers,
+		"security.protocol":           "SASL_SSL",
+		"sasl.mechanism":              "AWS_MSK_IAM",
+		"sasl.aws_msk_iam.access.key": cred.AccessKeyID,
+		"sasl.aws_msk_iam.secret.key": cred.SecretAccessKey,
+		"ssl.ca.pem":                  config.Cfg.CaCert,
+	}, nil
 }
 
-func (p *Producer) CreateTopic(ctx context.Context, topic string, numPartitions int, replicationFactor int) error {
-	conn, err := kafka.DialContext(ctx, "tcp", p.writer.Addr.String())
+func NewProducer() (*Producer, error) {
+	kafkaConfig, err := getKafkaConfig()
+	if err != nil {
+		return nil, err
+	}
+	writer, err := kafka.NewProducer(kafkaConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Producer{
+		writer: writer,
+	}, nil
+}
+
+func CreateTopic(ctx context.Context, topicName string, numPartitions int, replicationFactor int) error {
+	config, err := getKafkaConfig()
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-
-	controller, err := conn.Controller()
+	admin, err := kafka.NewAdminClient(config)
 	if err != nil {
 		return err
 	}
+	defer admin.Close()
 
-	var controllerConn *kafka.Conn
-	controllerConn, err = kafka.DialContext(ctx, "tcp", controller.Host+":"+string(rune(controller.Port)))
-	if err != nil {
-		return err
-	}
-	defer controllerConn.Close()
-
-	topicConfig := kafka.TopicConfig{
-		Topic:             topic,
+	// Define topic spec
+	topic := kafka.TopicSpecification{
+		Topic:             topicName,
 		NumPartitions:     numPartitions,
 		ReplicationFactor: replicationFactor,
 	}
+	// Create topic
+	results, err := admin.CreateTopics(ctx, []kafka.TopicSpecification{topic}, kafka.SetAdminOperationTimeout(10*time.Second))
+	if err != nil {
+		return err
+	}
 
-	return controllerConn.CreateTopics(topicConfig)
+	for _, result := range results {
+		if result.Error.Code() != kafka.ErrNoError {
+			log.Printf("Failed to create topic %s: %v", result.Topic, result.Error)
+			return result.Error
+		}
+		log.Printf("Topic %s created successfully", result.Topic)
+	}
+	return nil
 }
 
 func (p *Producer) SendMessage(ctx context.Context, key string, value []byte) error {
 	msg := kafka.Message{
 		Key:   []byte(key),
 		Value: value,
+		TopicPartition: kafka.TopicPartition{
+			Topic:     &config.Cfg.KafkaTopic,
+			Partition: kafka.PartitionAny,
+		},
 	}
-	return p.writer.WriteMessages(ctx, msg)
+	deliveryChan := make(chan kafka.Event, 1)
+	err := p.writer.Produce(&msg, deliveryChan)
+	if err != nil {
+		return err
+	}
+
+	e := <-deliveryChan
+	m := e.(*kafka.Message)
+	if m.TopicPartition.Error != nil {
+		return m.TopicPartition.Error
+	}
+	return nil
 }
 
-func (p *Producer) Close() error {
-	return p.writer.Close()
+func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, error) {
+	config, err := getKafkaConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	config.SetKey("group.id", groupID)
+	config.SetKey("auto.offset.reset", "earliest")
+	config.SetKey("enable.auto.commit", "true")
+	config.SetKey("session.timeout.ms", 6000)
+	config.SetKey("max.poll.interval.ms", 300000) // 5 minutes
+	config.SetKey("fetch.min.bytes", 10000)       // 10KB
+	config.SetKey("fetch.max.bytes", 10000000)    // 10MB
+	reader, err := kafka.NewConsumer(config)
+	if err != nil {
+		return nil, err
+	}
+	err = reader.SubscribeTopics([]string{topic}, nil)
+	if err != nil {
+		reader.Close()
+		return nil, err
+	}
+	log.Printf("Kafka consumer initialized with topic: %s", topic)
+	return &Consumer{reader: reader}, nil
 }
 
-func NewConsumer(brokers []string, topic string, groupID string) *Consumer {
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:        brokers,
-		Topic:          topic,
-		GroupID:        groupID,
-		MinBytes:       10e3, // 10KB
-		MaxBytes:       10e6, // 10MB
-		CommitInterval: time.Second,
-	})
-	return &Consumer{reader: reader}
-}
-
-func (c *Consumer) ReadMessage(ctx context.Context) (kafka.Message, error) {
-	return c.reader.ReadMessage(ctx)
+func (c *Consumer) ReadMessage(timeout time.Duration) (*kafka.Message, error) {
+	return c.reader.ReadMessage(timeout)
 }
 
 func (c *Consumer) Close() error {

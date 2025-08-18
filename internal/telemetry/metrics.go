@@ -13,7 +13,7 @@ var (
 			Name: "total_events",
 			Help: "Total number of processed events",
 		},
-		[]string{"system", "role"}, // system = kafka | eventbridge, role = producer | consumer
+		[]string{"system"}, // system = kafka | eventbridge
 	)
 
 	eventDuration = prometheus.NewHistogramVec(

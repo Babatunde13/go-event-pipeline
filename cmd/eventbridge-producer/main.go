@@ -36,7 +36,7 @@ func (r *router) sendEvent(c *gin.Context) {
 	}
 
 	log.Printf("Received event: %s - %s", e.EventType, e.EventID)
-	e.Timestamp = int(time.Now().UTC().UnixMilli()) // Ensure timestamp is set to current time
+	e.Timestamp = time.Now().UTC().UnixMilli() // Ensure timestamp is set to current time
 	err := r.eb.PutEvent(context.Background(), config.Cfg.EventBusSource, string(e.EventType), e)
 
 	if err != nil {

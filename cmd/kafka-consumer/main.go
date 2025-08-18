@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/Babatunde13/event-pipeline/internal/config"
 	"github.com/Babatunde13/event-pipeline/internal/database"
@@ -42,13 +41,8 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 			continue
 		}
 
-		start := time.Now()
 		err = e.Save(ctx, ddb, event.SourceKafka)
-		telemetry.PushMetrics(
-			config.Cfg.PrometheusPushGatewayUrl,
-			float64(time.Since(start).Milliseconds()),
-			true, err == nil,
-		)
+		telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, e.Duration(), true, err == nil)
 
 		if err != nil {
 			log.Printf("Save failed: %v", err)

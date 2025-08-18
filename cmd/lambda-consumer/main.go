@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -33,19 +32,8 @@ func handler(ctx context.Context, ebEvent events.EventBridgeEvent) error {
 
 	log.Printf("[EventBridge] received event: %s - %s", e.EventType, e.EventID)
 
-	startMs := int64(e.Timestamp) // timestamp in ms in utc
-	var start time.Time
-	if startMs == 0 {
-		start = time.Now()
-	} else {
-		start = time.Unix(0, startMs*int64(time.Millisecond))
-	}
 	err := e.Save(ctx, ddb, event.SourceEventBridge)
-	telemetry.PushMetrics(
-		config.Cfg.PrometheusPushGatewayUrl,
-		float64(time.Since(start).Milliseconds()),
-		false, err == nil,
-	)
+	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, e.Duration(), false, err == nil)
 
 	if err != nil {
 		log.Printf("failed to store event in DynamoDB: %v", err)

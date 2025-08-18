@@ -29,7 +29,7 @@ var (
 
 type Event struct {
 	EventID   string                 `json:"event_id" dynamodbav:"event_id"`             // partition key
-	Timestamp int                    `json:"timestamp,omitempty" dynamodbav:"timestamp"` // sort key for DynamoDB
+	Timestamp int64                  `json:"timestamp,omitempty" dynamodbav:"timestamp"` // sort key for DynamoDB
 	EventType EventType              `json:"event_type" dynamodbav:"event_type"`
 	UserID    string                 `json:"user_id" dynamodbav:"user_id"`
 	Metadata  map[string]interface{} `json:"metadata" dynamodbav:"metadata"`
@@ -41,9 +41,17 @@ func New(eventType EventType, userID string, metadata map[string]interface{}) Ev
 		EventID:   uuid.NewString(),
 		EventType: eventType,
 		UserID:    userID,
-		Timestamp: int(time.Now().UTC().UnixMilli()), // Store timestamp in milliseconds
+		Timestamp: time.Now().UTC().UnixMilli(), // Store timestamp in milliseconds
 		Metadata:  metadata,
 	}
+}
+
+func (e *Event) Duration() float64 {
+	if e.Timestamp == 0 {
+		return 0
+	}
+	startTime := time.Unix(0, e.Timestamp*int64(time.Millisecond))
+	return float64(time.Since(startTime).Milliseconds())
 }
 
 func (e *Event) ToJSON() ([]byte, error) {

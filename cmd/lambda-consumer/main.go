@@ -33,12 +33,18 @@ func handler(ctx context.Context, ebEvent events.EventBridgeEvent) error {
 
 	log.Printf("[EventBridge] received event: %s - %s", e.EventType, e.EventID)
 
-	start := time.Now()
+	startMs := int64(e.Timestamp) // timestamp in ms in utc
+	var start time.Time
+	if startMs == 0 {
+		start = time.Now()
+	} else {
+		start = time.Unix(0, startMs*int64(time.Millisecond))
+	}
 	err := e.Save(ctx, ddb, event.SourceEventBridge)
 	telemetry.PushMetrics(
 		config.Cfg.PrometheusPushGatewayUrl,
 		float64(time.Since(start).Milliseconds()),
-		false, false, err == nil,
+		false, err == nil,
 	)
 
 	if err != nil {

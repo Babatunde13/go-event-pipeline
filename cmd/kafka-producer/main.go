@@ -8,7 +8,6 @@ import (
 	"github.com/Babatunde13/event-pipeline/internal/config"
 	"github.com/Babatunde13/event-pipeline/internal/event"
 	"github.com/Babatunde13/event-pipeline/internal/kafka"
-	"github.com/Babatunde13/event-pipeline/internal/telemetry"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
@@ -37,11 +36,9 @@ func (r *router) sendEvent(c *gin.Context) {
 	}
 
 	log.Printf("Received event: %s - %s", e.EventType, e.EventID)
-	start := time.Now()
-	e.Timestamp = int(start.UTC().UnixMilli()) // Ensure timestamp is set to current time
+	e.Timestamp = int(time.Now().UTC().UnixMilli()) // Ensure timestamp is set to current time
 	data, _ := e.ToJSON()
-	err := r.producer.SendMessage(context.Background(), e.EventID, data)
-	telemetry.PushMetrics(config.Cfg.PrometheusPushGatewayUrl, time.Since(start).Seconds(), true, true, err == nil)
+	err := r.producer.SendMessage(c.Request.Context(), e.EventID, data)
 	if err != nil {
 		log.Printf("failed to send event: %v", err)
 		c.JSON(500, gin.H{"error": err.Error()})

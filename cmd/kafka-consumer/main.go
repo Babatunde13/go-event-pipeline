@@ -47,7 +47,7 @@ func processBatch(ctx context.Context, batch []events.KafkaRecord) {
 		telemetry.PushMetrics(
 			config.Cfg.PrometheusPushGatewayUrl,
 			float64(time.Since(start).Milliseconds()),
-			true, false, err == nil,
+			true, err == nil,
 		)
 
 		if err != nil {

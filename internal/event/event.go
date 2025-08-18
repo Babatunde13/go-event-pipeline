@@ -51,7 +51,7 @@ func (e *Event) Duration() float64 {
 		return 0
 	}
 	startTime := time.Unix(0, e.Timestamp*int64(time.Millisecond))
-	return float64(time.Since(startTime).Milliseconds())
+	return float64(time.Since(startTime).Seconds())
 }
 
 func (e *Event) ToJSON() ([]byte, error) {

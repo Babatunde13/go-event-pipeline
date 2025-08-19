@@ -9,7 +9,7 @@ This project is the engineering implementation of a Bachelor's thesis comparing 
 To design, implement, and evaluate two parallel event-driven pipelines — one powered by **Kafka (AWS MSK)** and the other by **AWS EventBridge** — using a synthetic e-commerce use case. Both pipelines will:
 
 - Ingest and process simulated user interaction events
-- Write results to a Redis sink
+- Write results to a Dynamo database
 - Be monitored for latency, throughput, and system health
 - Be provisioned with Terraform for reproducibility
 
@@ -50,7 +50,7 @@ go-event-pipeline/
 ### EventBridge-Based Pipeline
 - Producer pushes events to EventBridge bus
 - EventBridge routes to Lambda or Go consumer
-- DynamoDB stores the processed events(dynamo is chosen over redis because of the intuitive UI for fetching data)
+- DynamoDB stores the processed events
 
 ---
 
@@ -75,7 +75,7 @@ go-event-pipeline/
 ## 🛠️ Tools & Technologies
 
 - Language: **Go**
-- Cloud: **AWS** (MSK, EventBridge, Lambda, Redis, IAM, Event Sourcing, VPC)
+- Cloud: **AWS** (MSK, EventBridge, Lambda, DynamoDB, IAM, Event Sourcing, VPC)
 - Monitoring: **Prometheus + Grafana**
 - Load Simulation: **Custom Go generator**
 
